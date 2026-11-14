@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function schoolDoc(code) { return get(/databases/$(database)/documents/schools/$(code)); }
+    function isMember(code) { return signedIn() && request.auth.uid in schoolDoc(code).data.members; }
+    function isAdmin(code) { return isMember(code) && schoolDoc(code).data.members[request.auth.uid].role == 'Admin'; }
+
+    match /schools/{code} {
+      // Mpikambana ihany no mahita ny sekoly
+      allow read: if signedIn() && request.auth.uid in resource.data.members;
+      // Mamorona sekoly vaovao: ilay mpamorona no Admin voalohany
+      allow create: if signedIn()
+                    && request.resource.data.owner == request.auth.uid
+                    && request.resource.data.members[request.auth.uid].role == 'Admin';
+      // Fanovana: ny Admin dia afaka manova ny zavatra rehetra;
+      // ny mpikambana hafa dia tsy afaka manova afa-tsy ny school/seq sy ny anarany manokana
+      allow update: if signedIn() && request.auth.uid in resource.data.members
+                    && request.resource.data.owner == resource.data.owner
+                    && (isAdmin(code)
+                        || (request.resource.data.members.diff(resource.data.members).affectedKeys().hasOnly([request.auth.uid])
+                            && request.resource.data.members[request.auth.uid].role == resource.data.members[request.auth.uid].role)
+                        || request.resource.data.members == resource.data.members);
+      allow delete: if false;
+
+      match /{col}/{id} {
+        allow read, write: if isMember(code);
+      }
+    }
+  }
+}
