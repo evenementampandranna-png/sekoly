@@ -1,31 +1,140 @@
 rules_version = '2';
+// Sekoly — Firestore Security Rules
+// Rôles : Admin, Directeur, Secretariat, Surveillant, Kasie (caissier), Mpampianatra (enseignant), Parent, Eleve
 service cloud.firestore {
   match /databases/{database}/documents {
 
     function signedIn() { return request.auth != null; }
-    function schoolDoc(code) { return get(/databases/$(database)/documents/schools/$(code)); }
-    function isMember(code) { return signedIn() && request.auth.uid in schoolDoc(code).data.members; }
-    function isAdmin(code) { return isMember(code) && schoolDoc(code).data.members[request.auth.uid].role == 'Admin'; }
+    function sch(code) { return get(/databases/$(database)/documents/schools/$(code)).data; }
+    function me(code) { return sch(code).members[request.auth.uid]; }
+    function isMember(code) { return signedIn() && request.auth.uid in sch(code).members; }
+    function role(code) { return me(code).role; }
+    function isStaff(code) { return isMember(code) && !(role(code) in ['Parent', 'Eleve']); }
+    function isBoss(code) { return isMember(code) && role(code) in ['Admin', 'Directeur']; }
+    function hasRole(code, rs) { return isMember(code) && role(code) in rs; }
+    function tid(code) { return me(code).get('teacherId', ''); }
+    function klass(code, cid) { return get(/databases/$(database)/documents/schools/$(code)/classes/$(cid)).data; }
+    // l'enseignant est titulaire de la classe ou affecté à la matière
+    function teachesSubject(code, cid, sb) {
+      let c = klass(code, cid);
+      return tid(code) != '' && (c.get('assign', {}).get(sb, '') == tid(code) || (c.get('teacherId', '') == tid(code) && c.get('assign', {}).get(sb, '') == ''));
+    }
+    function teachesClass(code, cid) {
+      let c = klass(code, cid);
+      return tid(code) != '' && (c.get('teacherId', '') == tid(code) || tid(code) in c.get('assign', {}).values());
+    }
+    function councilLocked(code, cid, term) {
+      let p = /databases/$(database)/documents/schools/$(code)/councils/$(cid + '|' + term);
+      return exists(p) && get(p).data.v.get('locked', false) == true;
+    }
 
     match /schools/{code} {
-      // Mpikambana ihany no mahita ny sekoly
       allow read: if signedIn() && request.auth.uid in resource.data.members;
-      // Mamorona sekoly vaovao: ilay mpamorona no Admin voalohany
       allow create: if signedIn()
                     && request.resource.data.owner == request.auth.uid
                     && request.resource.data.members[request.auth.uid].role == 'Admin';
-      // Fanovana: ny Admin dia afaka manova ny zavatra rehetra;
-      // ny mpikambana hafa dia tsy afaka manova afa-tsy ny school/seq sy ny anarany manokana
       allow update: if signedIn() && request.auth.uid in resource.data.members
                     && request.resource.data.owner == resource.data.owner
-                    && (isAdmin(code)
-                        || (request.resource.data.members.diff(resource.data.members).affectedKeys().hasOnly([request.auth.uid])
-                            && request.resource.data.members[request.auth.uid].role == resource.data.members[request.auth.uid].role)
-                        || request.resource.data.members == resource.data.members);
+                    && (
+                      // direction / secrétariat : gestion des comptes
+                      resource.data.members[request.auth.uid].role in ['Admin', 'Directeur', 'Secretariat']
+                      // personnel : paramètres inchangés côté comptes (compteur de reçus, etc.)
+                      || (!(resource.data.members[request.auth.uid].role in ['Parent', 'Eleve'])
+                          && request.resource.data.members == resource.data.members
+                          && (request.resource.data.school == resource.data.school || resource.data.members[request.auth.uid].role in ['Admin', 'Directeur']))
+                      // chacun peut modifier son propre nom / langue (pas son rôle)
+                      || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members'])
+                          && request.resource.data.members.diff(resource.data.members).affectedKeys().hasOnly([request.auth.uid])
+                          && request.resource.data.members[request.auth.uid].role == resource.data.members[request.auth.uid].role
+                          && request.resource.data.members[request.auth.uid].get('students', []) == resource.data.members[request.auth.uid].get('students', [])
+                          && request.resource.data.members[request.auth.uid].get('teacherId', '') == resource.data.members[request.auth.uid].get('teacherId', ''))
+                    );
       allow delete: if false;
 
+      // Journal des actions : ajout seulement, jamais modifié ni supprimé
+      match /logs/{id} {
+        allow read: if isBoss(code);
+        allow create: if isMember(code) && request.resource.data.uid == request.auth.uid;
+        allow update, delete: if false;
+      }
+      // Messagerie privée
+      match /messages/{id} {
+        allow read: if signedIn() && request.auth.uid in resource.data.uids;
+        allow create: if isMember(code) && request.resource.data.from == request.auth.uid && request.auth.uid in request.resource.data.uids;
+        allow update: if signedIn() && request.auth.uid in resource.data.uids
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']);
+        allow delete: if signedIn() && resource.data.from == request.auth.uid;
+      }
+      // Espace parents / élèves (résumés calculés par le personnel)
+      match /portal/{sid} {
+        allow read: if isStaff(code) || (isMember(code) && request.auth.uid in resource.data.uids);
+        allow write: if isStaff(code);
+      }
+      // Annonces : lisibles par tous les membres
+      match /announcements/{id} {
+        allow read: if isMember(code);
+        allow write: if hasRole(code, ['Admin', 'Directeur', 'Secretariat']);
+      }
+      // Notes : enseignant de la matière (si non verrouillé) ou direction
+      match /grades/{id} {
+        allow read: if isStaff(code);
+        allow write: if isBoss(code)
+          || (role(code) == 'Mpampianatra'
+              && teachesSubject(code, id.split('[|]')[0], id.split('[|]')[2])
+              && !councilLocked(code, id.split('[|]')[0], id.split('[|]')[1]));
+      }
+      // Conseils de classe (verrouillage) : direction
+      match /councils/{id} {
+        allow read: if isStaff(code);
+        allow write: if isBoss(code);
+      }
+      // Appel : surveillant, direction, enseignant de la classe
+      match /attendance/{id} {
+        allow read: if isStaff(code);
+        allow write: if hasRole(code, ['Admin', 'Directeur', 'Surveillant'])
+          || (role(code) == 'Mpampianatra' && teachesClass(code, id.split('[|]')[0]));
+      }
+      // Paiements : le caissier encaisse ; seule la direction modifie/annule
+      match /payments/{id} {
+        allow read: if isStaff(code);
+        allow create: if hasRole(code, ['Admin', 'Directeur', 'Kasie']);
+        allow update, delete: if isBoss(code);
+      }
+      match /closures/{id} {
+        allow read: if isStaff(code);
+        allow create: if hasRole(code, ['Admin', 'Directeur', 'Kasie']);
+        allow update, delete: if isBoss(code);
+      }
+      // Cahier de textes : l'enseignant pour ses propres séances
+      match /lessons/{id} {
+        allow read: if isStaff(code);
+        allow create, update: if isBoss(code) || (role(code) == 'Mpampianatra' && request.resource.data.teacherId == tid(code) && teachesClass(code, request.resource.data.classId));
+        allow delete: if isBoss(code) || (role(code) == 'Mpampianatra' && resource.data.teacherId == tid(code));
+      }
+      match /sanctions/{id} {
+        allow read: if isStaff(code);
+        allow write: if hasRole(code, ['Admin', 'Directeur', 'Surveillant']);
+      }
+      match /sms/{id} {
+        allow read, write: if isStaff(code);
+      }
+      match /staffatt/{id} {
+        allow read: if isStaff(code);
+        allow write: if hasRole(code, ['Admin', 'Directeur', 'Secretariat', 'Surveillant']);
+      }
+      match /students/{id} {
+        allow read: if isStaff(code);
+        allow write: if hasRole(code, ['Admin', 'Directeur', 'Secretariat']);
+      }
+      match /files/{id} {
+        allow read: if isStaff(code);
+        allow write: if hasRole(code, ['Admin', 'Directeur', 'Secretariat']);
+      }
       match /{col}/{id} {
-        allow read, write: if isMember(code);
+        // classes, teachers, subjects, timetable
+        allow read: if isStaff(code) && col in ['classes', 'teachers', 'subjects', 'timetable', 'archives'];
+        allow write: if col in ['classes', 'teachers', 'subjects', 'timetable'] && hasRole(code, ['Admin', 'Directeur', 'Secretariat']);
+        allow write: if col == 'archives' && isBoss(code);
       }
     }
   }
