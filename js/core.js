@@ -56,7 +56,7 @@ list:'<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
 const ic=(n,s=18)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]||''}</svg>`;
 
 /* ---------- language ---------- */
-let LANG=(()=>{try{return localStorage.getItem('sekoly_lang')||'mg'}catch(e){return'mg'}})();
+let LANG=(()=>{try{return localStorage.getItem('sekoly_lang')||'fr'}catch(e){return'fr'}})();
 const L=(mg,fr)=>LANG==='fr'?fr:mg;
 function setLang(l){LANG=l;try{localStorage.setItem('sekoly_lang',l)}catch(e){}document.documentElement.lang=l==='fr'?'fr':'mg'}
 
