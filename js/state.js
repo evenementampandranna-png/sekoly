@@ -15,7 +15,7 @@ const POSTES=()=>[['Mpampianatra',L('Mpampianatra','Enseignant')],['Tale',L('Tal
 const CONTRACTS=['CDI','CDD','Vacataire','Stagiaire'];
 const EVAL_TYPES=()=>[['Devoir',L('Asa an-trano','Devoir')],['Interro',L('Fanontaniana fohy','Interrogation')],['Compo',L('Fanadinana','Composition / Examen')]];
 const SANCTIONS=()=>[['Avertissement',L('Fampitandremana','Avertissement')],['Blâme',L('Fanakianana','Blâme')],['Retenue',L('Fitazonana','Retenue')],['Exclusion temporaire',L('Fandroahana vonjimaika','Exclusion temporaire')]];
-const ANN_TYPES=()=>[['info',L('Filazana','Information'),'#3b82f6'],['reunion',L('Fivoriana','Réunion'),'#8b5cf6'],['examen',L('Fanadinana','Examen'),'#ef4444'],['fety',L('Fety','Fête'),'#f59e0b'],['vakansy',L('Fialan-tsasatra','Vacances'),'#22c55e']];
+const ANN_TYPES=()=>[['info',L('Filazana','Information'),'#0878db'],['reunion',L('Fivoriana','Réunion'),'#8b5cf6'],['examen',L('Fanadinana','Examen'),'#e23d4c'],['fety',L('Fety','Fête'),'#f2a531'],['vakansy',L('Fialan-tsasatra','Vacances'),'#14a85b']];
 const EXAMS=['','CEPE','BEPC','BAC'];
 const DECISIONS=()=>[['',L('— Tsy mbola —','— À décider —')],['Passage',L('Miakatra kilasy','Passage')],['Redoublement',L('Mamerina kilasy','Redoublement')],['Exclusion',L('Voaroaka','Exclusion')]];
 const decisionL=d=>(DECISIONS().find(x=>x[0]===d)||[0,d||'—'])[1];

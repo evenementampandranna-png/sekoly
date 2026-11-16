@@ -33,7 +33,7 @@ V.tabilao=()=>{
   const late=active().map(s=>({s,due:dueAmount(s),n:lateMonths(s)})).filter(x=>x.due>0).sort((a,b)=>b.due-a.due);
   const maxCap=Math.max(1,...S.classes.map(c=>c.capacity||30));
   rows=`<div class="row c2">
-  <div class="card"><div class="card-h"><div><h3>${L('Saram-pianarana voaray isam-bolana','Écolages encaissés par mois')}</h3><small>${L('Voaray / andrasana','Encaissé / attendu')}</small></div><div class="legend"><span><i style="background:#0d9488"></i>${L('Voaray','Encaissé')}</span><span><i style="background:#e6efed"></i>${L('Andrasana','Attendu')}</span></div></div>${barChart()}</div>
+  <div class="card"><div class="card-h"><div><h3>${L('Saram-pianarana voaray isam-bolana','Écolages encaissés par mois')}</h3><small>${L('Voaray / andrasana','Encaissé / attendu')}</small></div><div class="legend"><span><i style="background:#2f7cf6"></i>${L('Voaray','Encaissé')}</span><span><i style="background:#e6ecf3"></i>${L('Andrasana','Attendu')}</span></div></div>${barChart()}</div>
   <div class="card"><div class="card-h"><div><h3>${L('Mpianatra isaky ny kilasy','Effectifs par classe')}</h3><small>${active().length} ${L('mpianatra','élèves')}</small></div></div>
    ${S.classes.map(c=>{const n=active().filter(s=>s.classId===c.id).length;return`<div class="crow"><b><span class="dot" style="background:${c.color}"></span>${esc(c.name)}</b><div class="bar"><i style="width:${n/maxCap*100}%;background:${c.color}"></i></div><span>${n}/${c.capacity||30}</span></div>`}).join('')}</div></div>
   <div class="row c2e">
@@ -52,12 +52,12 @@ function barChart(){
  const data=MONTHS_MG.map((m,i)=>({l:MSH(i),got:sumMonth(i)}));
  const max=Math.max(exp,...data.map(d=>d.got))||1;
  const W=640,H=240,pb=28,top=22,gw=W/10,bw=Math.min(36,gw*.56),ch=H-pb-top;
- let g=`<line x1="0" y1="${H-pb}" x2="${W}" y2="${H-pb}" stroke="#e6ebe9"/>`;
- [.25,.5,.75,1].forEach(f=>{const y=H-pb-ch*f;g+=`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="#f1f4f3" stroke-dasharray="4 4"/>`});
+ let g=`<line x1="0" y1="${H-pb}" x2="${W}" y2="${H-pb}" stroke="#e6ecf3"/>`;
+ [.25,.5,.75,1].forEach(f=>{const y=H-pb-ch*f;g+=`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="#f3f6fb" stroke-dasharray="4 4"/>`});
  data.forEach((d,i)=>{const x=i*gw+(gw-bw)/2,he=exp/max*ch,hg=d.got/max*ch,cur=i===cm;
-  g+=`<rect x="${x}" y="${H-pb-he}" width="${bw}" height="${he}" rx="8" fill="#e6efed"/>`;
+  g+=`<rect x="${x}" y="${H-pb-he}" width="${bw}" height="${he}" rx="8" fill="#e6ecf3"/>`;
   if(hg>0)g+=`<rect x="${x}" y="${H-pb-hg}" width="${bw}" height="${hg}" rx="8" fill="${cur?'url(#gc)':'url(#gg)'}"><title>${MONTH(i)}: ${fmt(d.got)} / ${fmt(exp)}</title></rect>`;
-  if(d.got>0)g+=`<text x="${x+bw/2}" y="${H-pb-Math.max(hg,he)-7}" text-anchor="middle" font-size="11" font-weight="700" fill="#0f766e">${short(d.got)}</text>`;
-  g+=`<text x="${x+bw/2}" y="${H-8}" text-anchor="middle" font-size="11.5" font-weight="${cur?700:500}" fill="${cur?'#0f1f1c':'#94a3b8'}">${d.l}</text>`});
- return`<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;font-family:inherit"><defs><linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#14b8a6"/><stop offset="1" stop-color="#0d9488"/></linearGradient><linearGradient id="gc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbbf24"/><stop offset="1" stop-color="#f59e0b"/></linearGradient></defs>${g}</svg>`;
+  if(d.got>0)g+=`<text x="${x+bw/2}" y="${H-pb-Math.max(hg,he)-7}" text-anchor="middle" font-size="11" font-weight="700" fill="#1f68e0">${short(d.got)}</text>`;
+  g+=`<text x="${x+bw/2}" y="${H-8}" text-anchor="middle" font-size="11.5" font-weight="${cur?700:500}" fill="${cur?'#102a40':'#94a3b8'}">${d.l}</text>`});
+ return`<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;font-family:inherit"><defs><linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f7cf6"/><stop offset="1" stop-color="#2f7cf6"/></linearGradient><linearGradient id="gc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1c84a"/><stop offset="1" stop-color="#f2a531"/></linearGradient></defs>${g}</svg>`;
 }

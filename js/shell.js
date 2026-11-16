@@ -50,8 +50,8 @@ function loginView(){
  const reg=loginMode==='register';
  return`<div class="login">
  <div class="login-art"><div class="grid-bg"></div>
-  <div class="brand"><div class="logo">${ic('cap',22)}</div><div><b>Sekoly</b><small style="color:#99f6e4">${L('Fitantanana sekoly','Gestion scolaire')}</small></div></div>
-  <div class="float-card"><div style="width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:#ccfbf1;color:#0f766e">${ic('trend')}</div><div><small>${L('Saram-pianarana voaray','Écolages encaissés')}</small><b>+ 92%</b></div></div>
+  <div class="brand"><div class="logo">${ic('cap',22)}</div><div><b>Sekoly</b><small>${L('Fitantanana sekoly','Gestion scolaire')}</small></div></div>
+  <div class="float-card"><div style="width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:#eaf2ff;color:#1f68e0">${ic('trend')}</div><div><small>${L('Saram-pianarana voaray','Écolages encaissés')}</small><b>+ 92%</b></div></div>
   <div>
    <h1>${L('Mpianatra, vola, naoty ary ray aman-dreny','Élèves, finances, notes et parents')} — <span>${L("amin'ny toerana iray.",'au même endroit.')}</span></h1>
    <p class="lead">${L("Rindrambaiko fitantanana sekoly feno: fisoratana anarana, saram-pianarana, kara-naoty, fiantsoana, SMS, toerana ho an'ny ray aman-dreny. Mandeha na tsy misy internet aza.","Logiciel de gestion scolaire complet : inscriptions, écolages, bulletins, absences, SMS, espace parents. Fonctionne même hors connexion.")}</p>
@@ -99,7 +99,7 @@ function loginView(){
 /* ---------- shared widgets ---------- */
 const clsOpts=(selId,all,list)=>`${all?`<option value="">${all}</option>`:''}${(list||S.classes).map(c=>`<option value="${c.id}" ${selId===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}`;
 const termOpts=t=>TERMS().map(([k,l])=>`<option value="${k}" ${t===k?'selected':''}>${l}</option>`).join('');
-const clsBadge=c=>c?`<span class="badge nd" style="background:${(c.color||'#14b8a6')}1f;color:${c.color||'#0f766e'}">${esc(c.name)}</span>`:'—';
+const clsBadge=c=>c?`<span class="badge nd" style="background:${(c.color||'#2f7cf6')}1f;color:${c.color||'#1f68e0'}">${esc(c.name)}</span>`:'—';
 const stuWho=(s,sub)=>`<div class="who">${avs(fullName(s),s?.id,s?.photo)}<div><b>${esc(fullName(s))}</b>${sub!==undefined?`<small>${sub}</small>`:''}</div></div>`;
 function stuOptions(selId,filter){return`<option value="">${L('— Safidio ny mpianatra —','— Choisir un élève —')}</option>`+S.classes.map(c=>{const ss=S.students.filter(s=>s.classId===c.id&&s.status==='Mianatra'&&(!filter||filter(s))).sort((a,b)=>fullName(a).localeCompare(fullName(b)));return ss.length?`<optgroup label="${esc(c.name)}">${ss.map(s=>`<option value="${s.id}" ${s.id===selId?'selected':''}>${esc(fullName(s))} · ${esc(s.matricule)}${lateMonths(s)?' ⚠':''}</option>`).join('')}</optgroup>`:''}).join('')}
 const printHead=(title,sub='')=>`<div class="ph"><div class="ph-l"><div class="ph-logo">${ic('cap',22)}</div><div><b>${esc(S.school.name)}</b><small>${esc([S.school.address,S.school.city].filter(Boolean).join(', '))}${S.school.phone?' · Tél. '+esc(S.school.phone):''}</small></div></div><div class="ph-r"><b>${title}</b><small>${sub||('Année scolaire '+esc(S.school.year))}</small></div></div>`;

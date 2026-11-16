@@ -92,10 +92,10 @@ const curMonthIdx=()=>{const m=new Date().getMonth();const map={8:0,9:1,10:2,11:
 const monthOfDate=s=>{const m=new Date(s+'T12:00').getMonth();return{8:0,9:1,10:2,11:3,0:4,1:5,2:6,3:7,4:8,5:9}[m]??9};
 const ageOf=b=>{if(!b)return null;const d=new Date(b),n=new Date();let a=n.getFullYear()-d.getFullYear();if(n.getMonth()<d.getMonth()||(n.getMonth()===d.getMonth()&&n.getDate()<d.getDate()))a--;return a};
 const initials=n=>String(n||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
-const PAL=[['#ccfbf1','#0f766e'],['#dbeafe','#1d4ed8'],['#fef3c7','#b45309'],['#fce7f3','#be185d'],['#ede9fe','#6d28d9'],['#dcfce7','#15803d'],['#ffedd5','#c2410c'],['#e0f2fe','#0369a1']];
+const PAL=[['#eaf2ff','#1f68e0'],['#e4f1fd','#0868b8'],['#fff1d9','#b56a00'],['#fce7f3','#be185d'],['#ede9fe','#6d28d9'],['#e1f7e9','#118847'],['#ffedd5','#c2410c'],['#e0f2fe','#0369a1']];
 const palOf=s=>{let h=0;for(const c of String(s))h=(h*31+c.charCodeAt(0))>>>0;return PAL[h%PAL.length]};
 const avs=(name,key,photo)=>{if(photo)return`<img class="avs" src="${photo}" alt="">`;const[b,f]=palOf(key||name);return`<div class="avs" style="background:${b};color:${f}">${esc(initials(name))}</div>`};
-const CCOL=['#14b8a6','#3b82f6','#f59e0b','#ec4899','#8b5cf6','#22c55e','#f97316','#0ea5e9','#ef4444','#64748b'];
+const CCOL=['#2f7cf6','#0878db','#f2a531','#ec4899','#8b5cf6','#14a85b','#f97316','#0ea5e9','#e23d4c','#5f7386'];
 const f2=v=>v==null||isNaN(v)?'—':(+v).toFixed(2).replace('.',',');
 const nz=v=>v!==undefined&&v!==null&&v!==''&&!isNaN(v);
 const sum=a=>a.reduce((x,y)=>x+(+y||0),0);
