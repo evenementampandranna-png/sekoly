@@ -11,7 +11,7 @@ let FB=null;
 const COLS=['students','payments','classes','teachers','subjects','attendance','grades','councils','timetable','sanctions','closures','announcements','sms','lessons','staffatt','portal'];
 const MAPC={attendance:1,grades:1,councils:1,timetable:1,staffatt:1};
 let unsubs=[],last={},loaded={},need=[],registering=false,authReady=false,syncErr=null,pending=0,onlineNow=navigator.onLine;
-let loginErr='',loginMode='login',busy=false,lf={};
+let loginErr='',loginMode='login',busy=false,lf={},IS_VENDOR=false,licUnsub=null,licCodeSub=null,vendUnsub=null;
 const emailOf=(code,login)=>`${String(login).trim().toLowerCase().replace(/[^a-z0-9._-]/g,'')}@${String(code).trim().toLowerCase()}.sekoly.app`;
 const codeOfEmail=e=>String(e||'').split('@')[1]?.split('.')[0]?.toUpperCase()||'';
 function stable(v){if(Array.isArray(v))return'['+v.map(stable).join(',')+']';if(v&&typeof v==='object')return'{'+Object.keys(v).filter(k=>v[k]!==undefined).sort().map(k=>JSON.stringify(k)+':'+stable(v[k])).join(',')+'}';return JSON.stringify(v===undefined?null:v)}
@@ -50,7 +50,7 @@ function log(action,detail){if(!FB?.db||!SCHOOL||!user)return;try{FB.addDoc(FB.c
 /* ---------- read ---------- */
 let rT=null;
 function schedule(){clearTimeout(rT);rT=setTimeout(()=>{if(user&&S&&loaded.__main&&need.every(c=>loaded[c]))render()},40)}
-function detach(){unsubs.forEach(u=>{try{u()}catch(e){}});unsubs=[];last={};loaded={};need=[];SCHOOL=null;S=null}
+function detach(){[licUnsub,vendUnsub].forEach(u=>{try{u&&u()}catch(e){}});licUnsub=vendUnsub=null;licCodeSub=null;IS_VENDOR=false;unsubs.forEach(u=>{try{u()}catch(e){}});unsubs=[];last={};loaded={};need=[];SCHOOL=null;S=null}
 function sub(col,q,isMap){
  unsubs.push(FB.onSnapshot(q,qs=>{
   if(!S)return;
@@ -70,23 +70,24 @@ function attach(code){
   const d=snap.data(),me=(d.members||{})[FB.auth.currentUser?.uid];
   if(!me){fatal(L('Tsy mpikambana amin\'ny sekoly','Vous n\'êtes pas membre de l\'école')+' "'+code+'".');return}
   S.school=Object.assign(emptyState().school,d.school||{});S.seq=d.seq||0;S.members=d.members||{};S.owner=d.owner;
+  S.meta={created:d.created||0,trialEnd:d.trialEnd??((d.created||Date.now())+TRIAL_MS),licenseCode:d.licenseCode||''};watchLicense(code,S.meta.licenseCode);
   last.__main=stable(mainOf());
   const prevRole=user?.role;
   user={uid:FB.auth.currentUser.uid,...me};loginErr='';loaded.__main=1;
   if(me.lang&&me.lang!==LANG&&!lsGet('sekoly_lang'))setLang(me.lang);
   if(subscribed&&prevRole&&prevRole!==me.role){attach(code);return}
-  if(!subscribed){subscribed=true;subscribeFor(code)}
+  if(!subscribed){subscribed=true;subscribeFor(code);checkVendor()}
   schedule();
  },e=>fatal(fbMsg(e))));
 }
 function subscribeFor(code){
  const db=FB.db,col=n=>FB.collection(db,'schools',code,n),uidv=FB.auth.currentUser.uid;
  if(isStaff()){
-  need=[...COLS,'messages'];
+  need=[...COLS,'messages','__lic'];
   for(const c of COLS)sub(c,col(c),!!MAPC[c]);
   if(isBoss()){need.push('logs');sub('logs',FB.query(col('logs'),FB.orderBy('at','desc'),FB.limit(400)))}
  }else{
-  need=['portal','announcements','messages'];
+  need=['portal','announcements','messages','__lic'];
   sub('portal',FB.query(col('portal'),FB.where('uids','array-contains',uidv)));
   sub('announcements',col('announcements'));
  }
@@ -121,3 +122,41 @@ const addFile=f=>FB.addDoc(FB.collection(FB.db,'schools',SCHOOL,'files'),clean({
 const delFile=id=>FB.deleteDoc(FB.doc(FB.db,'schools',SCHOOL,'files',id));
 async function listArchives(){const qs=await FB.getDocs(FB.collection(FB.db,'schools',SCHOOL,'archives'));const r=[];qs.forEach(d=>r.push({id:d.id,...d.data()}));return r}
 async function writeArchive(year,payload){const txt=JSON.stringify(payload);const parts=[];for(let i=0;i<txt.length;i+=700000)parts.push(txt.slice(i,i+700000));for(let i=0;i<parts.length;i++)await FB.setDoc(FB.doc(FB.db,'schools',SCHOOL,'archives',`${year}_${String(i).padStart(3,'0')}`),{year,part:i,parts:parts.length,data:parts[i],at:Date.now()})}
+
+/* ---------- licences ---------- */
+const TRIAL_MS=30*864e5;
+function watchLicense(code,lc){
+ if(lc===licCodeSub&&loaded.__lic)return;
+ licCodeSub=lc;try{licUnsub&&licUnsub()}catch(e){}licUnsub=null;
+ if(!lc){S.lic=null;loaded.__lic=1;schedule();return}
+ licUnsub=FB.onSnapshot(FB.doc(FB.db,'licenses',lc),snap=>{if(!S)return;S.lic=snap.exists()?{...snap.data(),code:lc}:null;loaded.__lic=1;schedule()},e=>{console.warn('lic',e);if(S){S.lic=null;loaded.__lic=1;schedule()}});
+}
+function checkVendor(){
+ if(!FB.getDoc)return;
+ FB.getDoc(FB.doc(FB.db,'vendors',FB.auth.currentUser.uid)).then(s=>{
+  IS_VENDOR=s.exists();if(!IS_VENDOR||!S)return;
+  vendUnsub=FB.onSnapshot(FB.collection(FB.db,'licenses'),qs=>{if(!S)return;const a=[];qs.forEach(d=>a.push({...d.data(),code:d.id}));S.licenses=a.sort((x,y)=>(y.createdAt||0)-(x.createdAt||0));schedule()},e=>console.warn('licenses',e));
+  schedule();
+ }).catch(()=>{});
+}
+function licState(){
+ const now=Date.now(),m=S?.meta||{},l=S?.lic;
+ const day=t=>Math.max(0,Math.ceil((t-now)/864e5));
+ if(l&&l.school===SCHOOL&&l.status==='active'&&(l.expires||0)>now)return{ok:true,kind:'licence',expires:l.expires,days:day(l.expires),plan:l.plan,max:+l.maxStudents||0,code:l.code};
+ if(now<(m.trialEnd||0))return{ok:true,kind:'trial',expires:m.trialEnd,days:day(m.trialEnd),max:0};
+ return{ok:false,kind:l?(l.status!=='active'?'revoked':l.school!==SCHOOL?'other':'expired'):'none',expires:l?.expires||m.trialEnd||0,days:0,code:l?.code||''};
+}
+const normCode=c=>String(c||'').toUpperCase().replace(/[^A-Z0-9]/g,'').replace(/^SKL/,'').replace(/(.{4})(?=.)/g,'$1-').replace(/^/,'SKL-');
+async function activateLicense(raw){
+ const code=normCode(raw);
+ const snap=await FB.getDoc(FB.doc(FB.db,'licenses',code));
+ if(!snap.exists())throw{message:L('Tsy misy io kaody licence io.','Code de licence introuvable.')};
+ const l=snap.data();
+ if(l.status!=='active')throw{message:L('Nofoanana io licence io.','Cette licence a été révoquée.')};
+ if(l.school&&l.school!==SCHOOL)throw{message:L('Efa ampiasain\'ny sekoly hafa io kaody io.','Ce code est déjà utilisé par une autre école.')};
+ if((l.expires||0)<Date.now())throw{message:L('Efa lany daty io licence io.','Cette licence est expirée.')};
+ if(!l.school)await FB.updateDoc(FB.doc(FB.db,'licenses',code),{school:SCHOOL,activatedAt:Date.now(),activatedBy:user.uid});
+ await FB.updateDoc(FB.doc(FB.db,'schools',SCHOOL),{licenseCode:code});
+ log('licence.activate',code);
+ return code;
+}

@@ -2,9 +2,9 @@
 'use strict';
 V.fikirakirana=()=>{
  if(!CAN.settings())ui.setTab='kaonty';
- const tabs=[CAN.settings()&&['sekoly',L('Sekoly','Établissement'),'home'],CAN.settings()&&['taona',L('Taom-pianarana','Année scolaire'),'cal'],CAN.users()&&['mpampiasa',L('Mpampiasa','Utilisateurs'),'shield'],['kaonty',L('Kaontiko','Mon compte'),'user'],CAN.settings()&&['angona',L('Angona & backup','Données & sauvegardes'),'db'],CAN.settings()&&['famaranana',L('Famaranana taona','Clôture d\'année'),'refresh']];
+ const tabs=[CAN.settings()&&['sekoly',L('Sekoly','Établissement'),'home'],CAN.settings()&&['taona',L('Taom-pianarana','Année scolaire'),'cal'],CAN.users()&&['mpampiasa',L('Mpampiasa','Utilisateurs'),'shield'],CAN.settings()&&['licence','Licence','lock'],['kaonty',L('Kaontiko','Mon compte'),'user'],CAN.settings()&&['angona',L('Angona & backup','Données & sauvegardes'),'db'],CAN.settings()&&['famaranana',L('Famaranana taona','Clôture d\'année'),'refresh']];
  const head=`<div class="toolbar">${tabsBar(ui.setTab,tabs,'setTab')}</div>`;
- return head+({taona:setYear,mpampiasa:setUsers,kaonty:setAccount,angona:setData,famaranana:setRollover}[ui.setTab]||setSchool)();
+ return head+({licence:setLicence,taona:setYear,mpampiasa:setUsers,kaonty:setAccount,angona:setData,famaranana:setRollover}[ui.setTab]||setSchool)();
 };
 function setSchool(){const sc=S.school;return`<div class="card" style="max-width:900px"><div class="card-h"><div><h3>${L('Momba ny sekoly','Établissement')}</h3><small>${L('Miseho amin\'ny rosia, kara-naoty, fanamarinana','Apparaît sur reçus, bulletins, certificats')}</small></div></div>
  <form data-form="school" class="stack"><div class="grid2">

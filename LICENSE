@@ -1,0 +1,50 @@
+SEKOLY — LICENCE PROPRIÉTAIRE / FAHAZOAN-DÀLANA MANOKANA
+
+Copyright © 2026 evenementampandranna-png (« l'Éditeur »). Tous droits réservés.
+
+1. Propriété
+Le logiciel Sekoly (code source, interface, design, documentation, bases de
+données et fichiers associés, ci-après « le Logiciel ») est la propriété
+exclusive de l'Éditeur. Il est protégé par les lois sur le droit d'auteur et
+la propriété intellectuelle, notamment la loi malgache n° 94-036 du
+18 septembre 1995 relative à la propriété littéraire et artistique.
+
+2. Licence d'utilisation
+L'utilisation du Logiciel par un établissement scolaire est accordée
+uniquement au moyen d'un code de licence valide délivré par l'Éditeur, après
+une période d'essai gratuite de 30 jours. La licence est personnelle,
+non exclusive, non cessible et limitée à l'établissement auquel elle a été
+attribuée, pour la durée et le nombre d'élèves indiqués.
+
+3. Interdictions
+Sauf autorisation écrite préalable de l'Éditeur, il est interdit de :
+  a) copier, reproduire, modifier, traduire ou créer des œuvres dérivées du
+     Logiciel, en tout ou en partie ;
+  b) vendre, louer, distribuer, publier, sous-licencier ou héberger le
+     Logiciel pour des tiers ;
+  c) contourner, désactiver ou altérer le système de licence ;
+  d) décompiler ou extraire le code source à des fins de concurrence.
+La visibilité du code source dans un dépôt public ne vaut en aucun cas
+autorisation d'utilisation, de copie ou de redistribution.
+
+4. Données
+Les données saisies par l'établissement (élèves, notes, paiements…) restent la
+propriété de l'établissement. Elles demeurent consultables et exportables même
+après l'expiration de la licence.
+
+5. Garantie et responsabilité
+Le Logiciel est fourni « en l'état ». L'Éditeur s'efforce d'en assurer le bon
+fonctionnement mais ne saurait être tenu responsable des pertes indirectes
+résultant de son utilisation. L'établissement reste responsable de ses
+sauvegardes.
+
+6. Résiliation
+Toute violation de la présente licence entraîne la résiliation immédiate du
+droit d'utilisation, sans préjudice de poursuites.
+
+Contact : via le dépôt https://github.com/evenementampandranna-png/sekoly
+
+---------------------------------------------------------------------------
+(Malagasy) An'ny Mpamorona irery ny zo rehetra amin'ny rindrambaiko Sekoly.
+Tsy azo adika, ovaina, amidy na zaraina raha tsy misy fahazoan-dàlana an-tsoratra.
+Ny fampiasana dia mila kaody licence manan-kery, aorian'ny 30 andro fanandramana.

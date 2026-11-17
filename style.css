@@ -465,3 +465,17 @@ nav a.on svg{color:var(--or-2)}
 .idc-ph{background:#fff6d8;color:#a77a00}
 .receipt .logo{width:38px;height:38px}
 .av{background:linear-gradient(135deg,var(--navy-2),var(--navy-3))}
+/* licence */
+.lic-band{display:flex;align-items:center;gap:10px;border-radius:14px;padding:10px 14px;font-size:13.5px;flex-wrap:wrap}
+.lic-band span{flex:1}
+.lic-band.trial{background:linear-gradient(90deg,#06263b,#0b4161);color:#fff}
+.lic-band.trial .btn.white{background:#f1c84a;color:#3d2c00}
+.lic-band.warn{background:#fff1d9;border:1px solid #fbd99a;color:#7a4a00}
+.lock{min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(160deg,#eaf2ff 0%,#f5f9ff 55%,#fff4d2 100%)}
+.lock-card{background:#fff;border:1px solid var(--line);border-radius:22px;box-shadow:0 20px 60px rgba(16,42,64,.12);padding:34px;max-width:520px;width:100%;text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center}
+.lock-card h2{margin:6px 0 0;font-size:24px}
+.lock-card p{margin:0;line-height:1.6}
+.lic-form{display:flex;gap:8px;width:100%;flex-wrap:wrap}
+.lic-form .inp{flex:1;min-width:200px}
+.lock-foot{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+.lic-ul{margin:0;padding-left:18px;line-height:1.8;font-size:13.5px;color:#2a4258}

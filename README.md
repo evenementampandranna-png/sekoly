@@ -76,3 +76,10 @@ functions/                 ← Cloud Functions (SMS, backup)
 ```
 
 Fanamarihana: Firestore (NoSQL) no ampiasaina eto fa tsy PostgreSQL/MySQL. Ny tombony dia ny fiasana tsy misy internet sy ny fifandraisana mivantana (temps réel). Azo avoaka amin'ny JSON sy Excel ny angona rehetra amin'ny fotoana rehetra.
+
+## Licence
+
+- **Rakitra `LICENSE`**: licence manokana (propriétaire). Tsy azo adika, amidy na zaraina ny code raha tsy misy fahazoan-dàlana.
+- **Kaody licence**: ny sekoly vaovao tsirairay dia mahazo **30 andro fanandramana**. Aorian'izay, mila kaody `SKL-XXXX-XXXX-XXXX` vao afaka manova angona. Ny `firestore.rules` no manamafy izany: ny serveur no mandà ny fanovana, fa tsy ny efijery fotsiny.
+- **Console mpivarotra** (menio *Licences*): mamorona kaody (Starter 200 / Standard 600 / Premium tsy voafetra, ary ny faharetany), manitatra, manafoana. Hita ihany raha misy ny `vendors/{uid}` ao amin'ny Firestore.
+- Raha lany daty ny licence, dia **tsy very ny angona**: mbola azo jerena sy ampidinina izy, saingy tsy azo ovaina.

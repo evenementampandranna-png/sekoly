@@ -137,6 +137,7 @@ Object.assign(F,{
   const reduc=d.reducType&&+d.reducPct?{type:d.reducType,pct:Math.min(100,+d.reducPct)}:null;
   const o={first:d.first.trim(),last:d.last.trim(),sex:d.sex,birth:d.birth,birthPlace:d.birthPlace,classId:d.classId,parent:d.parent,phone:d.phone,parent2:d.parent2,phone2:d.phone2,address:d.address,entry:d.entry,origin:d.origin,start:+d.start||0,reduc,photo:d.photo||''};
   if(d.id){Object.assign(stu(d.id),o);log('student.update',fullName(o));toast(L('Voatahiry','Enregistré'));save();closeModal();render();return}
+  const ls=licState();if(ls.max&&active().length>=ls.max){toast(L(`Tratra ny fetra ${ls.max} mpianatra amin'ny licence. Havaozy ny licence.`,`Limite de ${ls.max} élèves atteinte pour cette licence. Passez à une formule supérieure.`),1);return}
   const yy=String(S.school.year).slice(2,4);const max=S.students.reduce((a,s)=>Math.max(a,parseInt(String(s.matricule||'').split('-').pop())||0),0);
   const s={id:'p'+uid(),matricule:`${yy}-${String(max+1).padStart(4,'0')}`,status:'Mianatra',year:S.school.year,created:today(),parentUids:[],...o};
   S.students.push(s);log('student.create',`${fullName(s)} (${s.matricule})`);save();closeModal();render();toast(L('Voasoratra','Élève inscrit')+': '+s.matricule);

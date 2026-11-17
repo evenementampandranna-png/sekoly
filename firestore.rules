@@ -28,13 +28,50 @@ service cloud.firestore {
       return exists(p) && get(p).data.v.get('locked', false) == true;
     }
 
+    // ---------- Licences ----------
+    function nowMs() { return request.time.toMillis(); }
+    function isVendor() { return signedIn() && exists(/databases/$(database)/documents/vendors/$(request.auth.uid)); }
+    function trialEnd(code) { let s = sch(code); return s.get('trialEnd', s.get('created', 0) + 2592000000); }
+    function licOk(code, lc) {
+      let l = get(/databases/$(database)/documents/licenses/$(lc)).data;
+      return l.get('school', '') == code && l.get('status', '') == 'active' && nowMs() < l.get('expires', 0);
+    }
+    // École sous licence valide (ou en période d'essai) : condition pour toute écriture de données
+    function licensed(code) {
+      return nowMs() < trialEnd(code) || (sch(code).get('licenseCode', '') != '' && licOk(code, sch(code).get('licenseCode', '')));
+    }
+
+    match /vendors/{uid} {
+      allow get: if signedIn() && request.auth.uid == uid;
+      allow list, write: if false;
+    }
+    match /licenses/{lc} {
+      allow get: if signedIn();
+      allow list, create, delete: if isVendor();
+      allow update: if isVendor() || (
+        resource.data.get('school', null) == null
+        && resource.data.status == 'active'
+        && nowMs() < resource.data.expires
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['school', 'activatedAt', 'activatedBy'])
+        && request.resource.data.activatedBy == request.auth.uid
+        && request.auth.uid in sch(request.resource.data.school).members
+        && sch(request.resource.data.school).members[request.auth.uid].role in ['Admin', 'Directeur']);
+    }
+
     match /schools/{code} {
       allow read: if signedIn() && request.auth.uid in resource.data.members;
       allow create: if signedIn()
                     && request.resource.data.owner == request.auth.uid
-                    && request.resource.data.members[request.auth.uid].role == 'Admin';
+                    && request.resource.data.members[request.auth.uid].role == 'Admin'
+                    && request.resource.data.created <= nowMs() + 60000
+                    && request.resource.data.get('trialEnd', 0) <= nowMs() + 2678400000
+                    && !('licenseCode' in request.resource.data);
       allow update: if signedIn() && request.auth.uid in resource.data.members
                     && request.resource.data.owner == resource.data.owner
+                    && request.resource.data.get('created', 0) == resource.data.get('created', 0)
+                    && request.resource.data.get('trialEnd', 0) == resource.data.get('trialEnd', 0)
+                    && (request.resource.data.get('licenseCode', '') == resource.data.get('licenseCode', '')
+                        || resource.data.members[request.auth.uid].role in ['Admin', 'Directeur'])
                     && (
                       // direction / secrétariat : gestion des comptes
                       resource.data.members[request.auth.uid].role in ['Admin', 'Directeur', 'Secretariat']
@@ -68,73 +105,74 @@ service cloud.firestore {
       // Espace parents / élèves (résumés calculés par le personnel)
       match /portal/{sid} {
         allow read: if isStaff(code) || (isMember(code) && request.auth.uid in resource.data.uids);
-        allow write: if isStaff(code);
+        allow write: if isStaff(code) && licensed(code);
       }
       // Annonces : lisibles par tous les membres
       match /announcements/{id} {
         allow read: if isMember(code);
-        allow write: if hasRole(code, ['Admin', 'Directeur', 'Secretariat']);
+        allow write: if hasRole(code, ['Admin', 'Directeur', 'Secretariat']) && licensed(code);
       }
       // Notes : enseignant de la matière (si non verrouillé) ou direction
       match /grades/{id} {
         allow read: if isStaff(code);
-        allow write: if isBoss(code)
+        allow write: if (isBoss(code)
           || (role(code) == 'Mpampianatra'
               && teachesSubject(code, id.split('[|]')[0], id.split('[|]')[2])
-              && !councilLocked(code, id.split('[|]')[0], id.split('[|]')[1]));
+              && !councilLocked(code, id.split('[|]')[0], id.split('[|]')[1]))) && licensed(code);
       }
       // Conseils de classe (verrouillage) : direction
       match /councils/{id} {
         allow read: if isStaff(code);
-        allow write: if isBoss(code);
+        allow write: if isBoss(code) && licensed(code);
       }
       // Appel : surveillant, direction, enseignant de la classe
       match /attendance/{id} {
         allow read: if isStaff(code);
-        allow write: if hasRole(code, ['Admin', 'Directeur', 'Surveillant'])
-          || (role(code) == 'Mpampianatra' && teachesClass(code, id.split('[|]')[0]));
+        allow write: if (hasRole(code, ['Admin', 'Directeur', 'Surveillant'])
+          || (role(code) == 'Mpampianatra' && teachesClass(code, id.split('[|]')[0]))) && licensed(code);
       }
       // Paiements : le caissier encaisse ; seule la direction modifie/annule
       match /payments/{id} {
         allow read: if isStaff(code);
-        allow create: if hasRole(code, ['Admin', 'Directeur', 'Kasie']);
-        allow update, delete: if isBoss(code);
+        allow create: if hasRole(code, ['Admin', 'Directeur', 'Kasie']) && licensed(code);
+        allow update, delete: if isBoss(code) && licensed(code);
       }
       match /closures/{id} {
         allow read: if isStaff(code);
-        allow create: if hasRole(code, ['Admin', 'Directeur', 'Kasie']);
-        allow update, delete: if isBoss(code);
+        allow create: if hasRole(code, ['Admin', 'Directeur', 'Kasie']) && licensed(code);
+        allow update, delete: if isBoss(code) && licensed(code);
       }
       // Cahier de textes : l'enseignant pour ses propres séances
       match /lessons/{id} {
         allow read: if isStaff(code);
-        allow create, update: if isBoss(code) || (role(code) == 'Mpampianatra' && request.resource.data.teacherId == tid(code) && teachesClass(code, request.resource.data.classId));
-        allow delete: if isBoss(code) || (role(code) == 'Mpampianatra' && resource.data.teacherId == tid(code));
+        allow create, update: if (isBoss(code) || (role(code) == 'Mpampianatra' && request.resource.data.teacherId == tid(code) && teachesClass(code, request.resource.data.classId))) && licensed(code);
+        allow delete: if (isBoss(code) || (role(code) == 'Mpampianatra' && resource.data.teacherId == tid(code))) && licensed(code);
       }
       match /sanctions/{id} {
         allow read: if isStaff(code);
-        allow write: if hasRole(code, ['Admin', 'Directeur', 'Surveillant']);
+        allow write: if hasRole(code, ['Admin', 'Directeur', 'Surveillant']) && licensed(code);
       }
       match /sms/{id} {
-        allow read, write: if isStaff(code);
+        allow read: if isStaff(code);
+        allow write: if isStaff(code) && licensed(code);
       }
       match /staffatt/{id} {
         allow read: if isStaff(code);
-        allow write: if hasRole(code, ['Admin', 'Directeur', 'Secretariat', 'Surveillant']);
+        allow write: if hasRole(code, ['Admin', 'Directeur', 'Secretariat', 'Surveillant']) && licensed(code);
       }
       match /students/{id} {
         allow read: if isStaff(code);
-        allow write: if hasRole(code, ['Admin', 'Directeur', 'Secretariat']);
+        allow write: if hasRole(code, ['Admin', 'Directeur', 'Secretariat']) && licensed(code);
       }
       match /files/{id} {
         allow read: if isStaff(code);
-        allow write: if hasRole(code, ['Admin', 'Directeur', 'Secretariat']);
+        allow write: if hasRole(code, ['Admin', 'Directeur', 'Secretariat']) && licensed(code);
       }
       match /{col}/{id} {
         // classes, teachers, subjects, timetable
         allow read: if isStaff(code) && col in ['classes', 'teachers', 'subjects', 'timetable', 'archives'];
-        allow write: if col in ['classes', 'teachers', 'subjects', 'timetable'] && hasRole(code, ['Admin', 'Directeur', 'Secretariat']);
-        allow write: if col == 'archives' && isBoss(code);
+        allow write: if col in ['classes', 'teachers', 'subjects', 'timetable'] && hasRole(code, ['Admin', 'Directeur', 'Secretariat']) && licensed(code);
+        allow write: if col == 'archives' && isBoss(code) && licensed(code);
       }
     }
   }

@@ -26,7 +26,7 @@ Object.assign(F,{
    const base=d.demo?seed():emptyState();
    base.school={...base.school,name:d.name.trim(),code};
    if(!d.demo)base.school.director=d.uname.trim();
-   try{await FB.setDoc(FB.doc(FB.db,'schools',code),{school:clean(base.school),seq:base.seq||0,owner:cred.user.uid,created:Date.now(),members:{[cred.user.uid]:{login,name:d.uname.trim(),role:'Admin',lang:LANG}}})}
+   try{await FB.setDoc(FB.doc(FB.db,'schools',code),{school:clean(base.school),seq:base.seq||0,owner:cred.user.uid,created:Date.now(),trialEnd:Date.now()+TRIAL_MS,members:{[cred.user.uid]:{login,name:d.uname.trim(),role:'Admin',lang:LANG}}})}
    catch(e){try{await FB.deleteUser(cred.user)}catch(x){}try{await FB.signOut(FB.auth)}catch(x){}cred=null;throw{code:'x',message:L('Efa misy sekoly mampiasa ny kaody','Ce code est déjà utilisé par une autre école :')+' "'+code+'".'}}
    SCHOOL=code;S=base;S.messages=[];user={uid:cred.user.uid,login,name:d.uname.trim(),role:'Admin'};last={};save();
    lsSet('sekoly_code',code);registering=false;busy=false;loginMode='login';lf={};location.hash='tabilao';user=null;attach(code);toast(L('Voaforona ny sekoly','École créée')+' '+code);return;
